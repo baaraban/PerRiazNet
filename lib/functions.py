@@ -41,3 +41,40 @@ class ReLU(ActivationFunction):
         x[x <= 0] = 0
         x[x > 0] = 1
         return x
+
+
+class ErrorFunction:
+    name = "base_error"
+
+    def calc(self, target, prediction):
+        return 0
+
+    def calc_derivative(self, target, prediction):
+        return 0
+
+
+class SquareRootError(ErrorFunction):
+    name = "Root square mean error"
+
+    def calc(self, target, prediction):
+        return np.sqrt(((prediction - target) ** 2).mean())
+
+    def calc_derivative(self, target, prediction):
+        return
+
+
+class CrossEntropy(ErrorFunction):
+    name = "Cross entropy loss function"
+
+    def calc(self, target, prediction):
+        m = target.shape[0]
+        p = SoftMax.calc(target)
+        log_likelihood = -np.log(p[range(m), target])
+        return np.sum(log_likelihood) / m
+
+    def calc_derivative(self, target, prediction):
+        m = prediction.shape[0]
+        grad = SoftMax.calc(prediction)
+        grad[range(m), target] -= 1
+        grad = grad / m
+        return grad
