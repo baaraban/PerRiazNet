@@ -16,7 +16,7 @@ class SoftMax(ActivationFunction):
 
     @staticmethod
     def calc(x):
-        e_x = np.exp(x - np.max(x))
+        e_x = np.exp(x)
         return e_x / e_x.sum(axis=0)
 
     @staticmethod
@@ -92,10 +92,9 @@ class CrossEntropy(ErrorFunction):
 
     @staticmethod
     def calc(target, prediction, epsilon=1e-12):
-        prediction = np.clip(prediction, epsilon, 1. - epsilon)
-        N = prediction.shape[0]
-        ce = -np.sum(np.sum(target * np.log(prediction + 1e-9))) / N
-        return ce
+        m = target.shape[0]
+        log_likelihood = -np.sum(np.multiply(target, np.log(prediction)))
+        return np.sum(log_likelihood) / m
 
     @staticmethod
     def calc_derivative(target, prediction):
