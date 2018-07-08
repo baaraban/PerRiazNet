@@ -4,19 +4,23 @@ import numpy as np
 class ActivationFunction:
     name = "base"
 
-    def calc(self, x): return 0
+    @staticmethod
+    def calc(x): return 0
 
-    def calc_derivative(self, x): return 0
+    @staticmethod
+    def calc_derivative(x): return 0
 
 
 class SoftMax(ActivationFunction):
     name = "SoftMax"
 
-    def calc(self, x):
+    @staticmethod
+    def calc(x):
         e_x = np.exp(x - np.max(x))
         return e_x / e_x.sum(axis=0)
 
-    def calc_derivative(self, x):
+    @staticmethod
+    def calc_derivative(x):
         s = x.reshape(-1, 1)
         return np.diagflat(s) - np.dot(s, s.T)
 
@@ -24,57 +28,75 @@ class SoftMax(ActivationFunction):
 class HyperbolicTangent(ActivationFunction):
     name = "Hyperbolic Tangent"
 
-    def calc(self, x):
+    @staticmethod
+    def calc(x):
         return np.tanh(x)
 
-    def calc_derivative(self, x):
+    @staticmethod
+    def calc_derivative(x):
         return 1.0 - np.tanh(x) ** 2
 
 
 class ReLU(ActivationFunction):
     name = "ReLU"
 
-    def calc(self, x):
+    @staticmethod
+    def calc(x):
         return x * (x > 0)
 
-    def calc_derivative(self, x):
+    @staticmethod
+    def calc_derivative(x):
         x[x <= 0] = 0
         x[x > 0] = 1
         return x
 
 
+class Sigmoid(ActivationFunction):
+    name = "Sigmoid"
+
+    @staticmethod
+    def calc(x):
+        return 1 / (1 + np.exp(-x))
+
+    @staticmethod
+    def calc_derivative(x):
+        return (np.exp(-x)) / ((1 + np.exp(-x)) ** 2)
+
+
 class ErrorFunction:
     name = "base_error"
 
-    def calc(self, target, prediction):
+    @staticmethod
+    def calc(target, prediction):
         return 0
 
-    def calc_derivative(self, target, prediction):
+    @staticmethod
+    def calc_derivative(target, prediction):
         return 0
 
 
 class SquareRootError(ErrorFunction):
     name = "Root square mean error"
 
-    def calc(self, target, prediction):
+    @staticmethod
+    def calc(target, prediction):
         return np.sqrt(((prediction - target) ** 2).mean())
 
-    def calc_derivative(self, target, prediction):
+    @staticmethod
+    def calc_derivative(target, prediction):
         return
 
 
 class CrossEntropy(ErrorFunction):
     name = "Cross entropy loss function"
 
-    def calc(self, target, prediction):
-        m = target.shape[0]
-        p = SoftMax.calc(target)
-        log_likelihood = -np.log(p[range(m), target])
-        return np.sum(log_likelihood) / m
+    @staticmethod
+    def calc(target, prediction, epsilon=1e-12):
+        prediction = np.clip(prediction, epsilon, 1. - epsilon)
+        N = prediction.shape[0]
+        ce = -np.sum(np.sum(target * np.log(prediction + 1e-9))) / N
+        return ce
 
-    def calc_derivative(self, target, prediction):
-        m = prediction.shape[0]
-        grad = SoftMax.calc(prediction)
-        grad[range(m), target] -= 1
-        grad = grad / m
-        return grad
+    @staticmethod
+    def calc_derivative(target, prediction):
+        return - (target * (1 / prediction) + (1 - target) * (1 / 1 - prediction))
