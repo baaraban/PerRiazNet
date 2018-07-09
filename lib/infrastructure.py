@@ -103,6 +103,14 @@ class NeuralNet:
         return self._layers[-1].get_result()
 
     def train(self, train_data, train_results, num_epochs, learning_rate, minibatch_size=1, log_in_console = True):
+        evaluation = dict()
+        evaluation['batch_size'] = "batch size: {}".format(minibatch_size)
+        evaluation['learning_rate'] = "learning rate: {}".format(learning_rate)
+        evaluation['epoch'] = []
+        evaluation['log_loss'] = []
+        evaluation['accuracy'] = []
+
+        errors_by_epochs = []
         for i in range(num_epochs):
             j = 0
             while j + minibatch_size < len(train_data):
@@ -114,13 +122,31 @@ class NeuralNet:
             self.feed_forward(batch)
             self.backpropagate(train_results[j:].T, learning_rate)
 
-            self.feed_forward(train_data)
+            predicted = self.feed_forward(train_data)
+
             error = self._layers[-1].get_error(train_results.T)
+            errors_by_epochs.append(error)
             if log_in_console:
                 print("Epoch: {0}; Error: {1};".format(i, error))
 
+            evaluation['epoch'].append(i)
+            evaluation['log_loss'].append(error)
+            evaluation['accuracy'].append(self.get_accuracy(predicted.T, y_test))
+
+        return evaluation
+
+
+    def get_accuracy(self, prediction, y):
+        correct = 0
+        for i in range(len(X_test)):
+            pred = np.argmax(prediction[i])
+            target = np.argmax(y[i])
+            if pred == target:
+                correct += 1
+        return correct * 1.0 / len(X_test)
+
     def predict(self, x):
-        return self.feed_forward(self, x)
+        return self.feed_forward(x)
 
     def backpropagate(self, target, learning_rate):
         self._layers[-1].backpropagate(target, learning_rate)
