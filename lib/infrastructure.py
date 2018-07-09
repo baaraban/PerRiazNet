@@ -102,7 +102,7 @@ class NeuralNet:
             self._layers[i].forward()
         return self._layers[-1].get_result()
 
-    def train(self, train_data, train_results, num_epochs, learning_rate, minibatch_size=1):
+    def train(self, train_data, train_results, num_epochs, learning_rate, minibatch_size=1, log_in_console = True):
         for i in range(num_epochs):
             j = 0
             while j + minibatch_size < len(train_data):
@@ -116,7 +116,8 @@ class NeuralNet:
 
             self.feed_forward(train_data)
             error = self._layers[-1].get_error(train_results.T)
-            print("Epoch: " + str(i) + "; Error: " + str(error))
+            if log_in_console:
+                print("Epoch: {0}; Error: {1};".format(i, error))
 
     def predict(self, x):
         return self.feed_forward(self, x)
