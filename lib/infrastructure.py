@@ -1,6 +1,6 @@
 import numpy as np
 
-LEARNING_RATE = 0.02
+LEARNING_RATE = 0.002
 
 
 class Connection:
@@ -18,7 +18,7 @@ class Connection:
     def update_weights(self, deltas):
         old_weights = self._weights.copy()
         self._weights -= LEARNING_RATE * deltas.dot(self._layer.get_result().T)
-        return old_weights
+        self._layer.backpropagate(old_weights.T.dot(deltas))
 
     def update_biases(self, deltas):
         self._biases -= LEARNING_RATE * np.mean(deltas, axis=1, keepdims=True)
@@ -48,9 +48,8 @@ class Layer:
     def backpropagate(self, previous):
         delta = self._func.calc_derivative(self._last_input) * previous
         for con in self._connections:
-            old_weights = con.update_weights(delta)
+            con.update_weights(delta)
             con.update_biases(delta)
-        return old_weights.T.dot(delta)
 
 
 class InputLayer(Layer):
@@ -78,11 +77,11 @@ class OutputLayer(Layer):
         self._connections = []
 
     def backpropagate(self, target):
-        delta = self._results - target
+        delta = self._results.copy()
+        delta -= target
         for con in self._connections:
-            old_weights = con.update_weights(delta)
+            con.update_weights(delta)
             con.update_biases(delta)
-        return old_weights.T.dot(delta)
 
     def get_error(self, target):
         return self._error_func.calc(target, self._results)
@@ -105,17 +104,22 @@ class NeuralNet:
 
     def train(self, train_data, train_results, num_epochs, minibatch_size=1):
         for i in range(num_epochs):
-            batch_indices = np.random.randint(low=0, high=len(train_data), size=(minibatch_size,))
-            batch = train_data[batch_indices]
+            j = 0
+            while j + minibatch_size < len(train_data):
+                batch = train_data[j:j+minibatch_size]
+                self.feed_forward(batch)
+                self.backpropagate(train_results[j:j+minibatch_size].T)
+                j += minibatch_size
+            batch = train_data[j:]
             self.feed_forward(batch)
-            error = self._layers[-1].get_error(train_results[batch_indices].T)
-            self.backpropagate(train_results[batch_indices].T)
+            self.backpropagate(train_results[j:].T)
+
+            self.feed_forward(train_data)
+            error = self._layers[-1].get_error(train_results.T)
             print("Epoch: " + str(i) + "; Error: " + str(error))
 
     def predict(self, x):
         return self.feed_forward(self, x)
 
     def backpropagate(self, target):
-        to_pass = target
-        for x in reversed(self._layers):
-            to_pass = x.backpropagate(to_pass)
+        self._layers[-1].backpropagate(target)
